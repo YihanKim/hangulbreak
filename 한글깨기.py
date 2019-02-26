@@ -14,15 +14,15 @@ class 한글분해():
         self.원본 = 입력
 
         if ord(입력) < 128:
-            self.종성 = "   "
-            self.중성 = "   "
-            self.초성 = " " + 입력 + " "
+            self.줄3 = "   "
+            self.줄2 = "   "
+            self.줄1 = " " + 입력 + " "
             # 단순한 아스키 글자라면 맨 첫 줄에만 인쇄되도록 초성에 그 값을 추가해줍니다.
 
         elif not ord('가') <= ord(입력) <= ord('힣'):
-            self.종성 = "    "
-            self.중성 = "    "
-            self.초성 = " " + 입력 + " "
+            self.줄3 = "    "
+            self.줄2 = "    "
+            self.줄1 = " " + 입력 + " "
             # 한문과 같은 유니코드 문자는 터미널에서 두 칸을 차지하므로,
             # 마찬가지로 초성에 그 값을 추가하되 중성과 종성의 길이를 맞춰줍니다.
 
@@ -50,7 +50,42 @@ class 한글분해():
             self.종성 = self.종성들[self.종성번호]
             self.중성 = self.중성들[self.중성번호]
             self.초성 = self.초성들[self.초성번호]
-            # 마지막으로 미리 가지고 있던 유니코드 배열에서 필요한 값을 찾아 대입합니다.
+
+            # 가로중성, 세로중성 처리
+            # 글자꼴
+            #   자음      가로중성
+            #   세로중성  X
+            #   (종성)    종성
+            if self.이중모음중성을_가진다면():
+                self.세로중성, self.가로중성 = self.이중모음일때_중성분해()
+            
+            else:
+                if self.가로형중성을_가진다면():
+                    self.가로중성 = self.중성
+                    self.세로중성 = "  "
+                elif self.세로형중성을_가진다면():
+                    self.가로중성 = "  "
+                    self.세로중성 = self.중성
+            
+            self.줄1 = self.초성 + self.가로중성
+            self.줄2 = self.세로중성 + "  "
+            if not self.종성이_있다면():
+                self.줄3 = "    "
+            elif not self.세로형중성을_가진다면 and self.이중자음종성을_가진다면():
+                self.줄3 = self.이중자음일때_종성분해()
+            else: # 단자음 종성이라면
+                self.줄3 = "  " + self.종성
+
+            # 가로형 중성일 때 종성으로 채우기
+            if self.줄2 == "    ":
+                self.줄2, self.줄3 = self.줄3, self.줄2
+            if self.줄1[-1] == self.줄2[-1] == self.줄3[0]:
+                self.줄1 = self.줄1[0]
+                self.줄2 = self.줄2[0]
+                self.줄3 = self.줄3[-1]
+                if self.줄3 == " ":
+                    self.줄3 = "  "
+                
 
     def 종성이_있다면(self):
         if self.종성 != "":
@@ -63,21 +98,42 @@ class 한글분해():
             return True
         else:
             return False
+    
+    def 세로형중성을_가진다면(self):
+        if self.중성 in "ㅗㅛㅜㅠㅡ":
+            return True 
+        else:
+            return False
+
+    def 이중모음중성을_가진다면(self):
+        if self.중성 in "ㅚㅘㅙㅟㅝㅞㅢ":
+            return True 
+        else:
+            return False
+
+    def 이중자음종성을_가진다면(self):
+        if self.종성 in "ㄲㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄㅆ":
+            return True 
+        else:
+            return False 
+
+    def 이중모음일때_중성분해(self):
+        if self.이중모음중성을_가진다면():
+            이중모음변환 = dict(zip("ㅚㅘㅙㅟㅝㅞㅢ", ['ㅗㅣ', 'ㅗㅏ', 'ㅗㅐ', 'ㅜㅣ', 'ㅜㅓ', 'ㅜㅔ', 'ㅡㅣ']))
+            return 이중모음변환[self.중성]
+        return self.중성
+
+    def 이중자음일때_종성분해(self):
+        if not self.세로형중성을_가진다면() and self.이중자음종성을_가진다면():
+            쌍자음변환 = dict(zip("ㄲㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄㅆ", 
+                    ['ㄱㄱ', 'ㄱㅅ', 'ㄴㅈ', 'ㄴㅎ', 'ㄹㄱ',
+                    'ㄹㅁ', 'ㄹㅂ', 'ㄹㅅ', 'ㄹㅌ', 'ㄹㅍ',
+                    'ㄹㅎ', 'ㅂㅅ', 'ㅅㅅ']))
+            return 쌍자음변환[self.종성]
+        return self.종성
 
     def 인쇄(self):
         print(self.원본, "을 분해함. 초성:", self.초성, "중성:", self.중성, "종성:", self.종성)
-
-def 차원분석(파자):
-    길이 = 1 # 초성의 길이
-    높이 = 1 # 초성의 높이
-
-    if 파자.가로형중성을_가진다면():
-        길이 = 길이 + 1
-    else:
-        높이 = 높이 + 1
-    if 파자.종성이_있다면():
-        높이 = 높이 + 1
-    return [길이, 높이]
 
 깨야할_한글 = list(input("\x1b[1;32m" + "깰 한글을 입력하세요: " + "\x1b[0m"))
 줄1 = []
@@ -86,23 +142,9 @@ def 차원분석(파자):
 
 for 한글 in 깨야할_한글:
     파자 = 한글분해(한글)
-    차원 = 차원분석(파자)
-    길이 = 차원[0]
-    높이 = 차원[1]
-    if 길이 == 2:
-        줄1.append(파자.초성 + 파자.중성)
-        if(높이 == 2):
-            줄2.append("  " + 파자.종성)
-        else:
-            줄2.append("    ")
-        줄3.append("    ")
-    else:
-        줄1.append(파자.초성)
-        줄2.append(파자.중성)
-        if 높이 == 3:
-            줄3.append(파자.종성)
-        else:
-            줄3.append("  ")
+    줄1.append(파자.줄1)
+    줄2.append(파자.줄2)
+    줄3.append(파자.줄3)
 
 print("\n\x1b[1;32m" + "결과: " + "\x1b[0m\n")
 for 글자 in 줄1:
